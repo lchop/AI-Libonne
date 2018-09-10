@@ -1,0 +1,121 @@
+%!TEX root = ../dissertation.tex
+
+\chapter{Background}
+\label{chapter:Background}
+
+This chapter provides fundamentals of theoretical knowledge required to understand the work for the previously stated problem. Firstly, we will discuss about object detection and feature extraction with presentation of the state of the art solution used (section \ref{Object_detection}). Secondly, we will describe the visual servoing control theory and solutions (section \ref{Visual_Servoing}). Thirdly, we will explain what is a manipulator in terms of robotics and what is kinematics of robotic manipulators (section \ref{Robotic_manipulator}).
+
+\section{Object Detection and Features Extractions}
+\label{Object_detection}
+
+Object detection is the fist step performed by the presented controller. This detection is used to classify and track the object in real-time when the arm is moving (since the camera is fixed to the end effector) but also if the object is moved since the controller is used in a dynamic environment. Feature extraction is the second step performed by the controller and is used to compute the visual servoing control law.
+
+\subsection{Objection detection}
+
+Objection detection is a classical problem in computer vision, and it can be stated as recognize what the objects are inside a given image and also where they are in the image. To achieve this task, this work use a state of the art object detection algorithm called \gls{YOLO} \cite{DBLP:journals/corr/RedmonDGF15}.
+\gls{YOLO} is a convolutional neural network that was introduced in 2015 and recently improved its accuracy and speed on object detection with YOLOv2 \cite{DBLP:journals/corr/RedmonF16}. It is an object detection system targeted for real-time processing. 
+
+\subsubsection{Functioning}
+
+The first step is given an image, YOLO starts by splitting that image into an n\*n grid cells (figure : \ref{pict:yolo_grid}). In this grid, each of the cells (in red, in figure \ref{pict:yolo_grid}) is responsible for predicting n bounding box associate with a confidence score. 
+
+\newpage
+
+\begin{figure} [!ht]
+    \centering
+    \includegraphics[width=0.4\linewidth]{images/yolo_grid.png}
+    \caption{Image splitted into a n*n grid, from YOLO website}
+    \label{pict:yolo_grid}
+\end{figure}
+
+Each individual bounding box confidence score tells you how certain YOLO is that the predicted bounding box actually contains an object and also how well the bounding box feats the object.
+
+\begin{figure} [!ht]
+    \centering
+    \includegraphics[width=0.4\linewidth]{images/yolo_confidence.png}
+    \caption{Resulting prediction from all the grid cells (the thickness of the bounding box increase with the confidence, from YOLO website}
+    \label{pict:yolo_confidence}
+\end{figure}
+
+In figure \ref{pict:yolo_confidence}, the prediction from all the cells regrouped together is visualized. This prediction take the aspect of many bounding box ranked by their confidence score. This way you know more or less where objects are in the image but you don't know what is the object.
+
+The second step is for each cells (figure: \ref{pict:yolo_grid}) YOLO predicts a  class conditional probabilities. It only predicts one set of class probabilities per cell, regardless the number of bounding box associated with that cell. Note that since its using conditional probabilities, if a cell predict an object for example a bike it doesn't mean that inside of this cell there is this bike, it only means that if there is an object inside this bounding box then this object is a bike (figure \ref{pict:yolo_proba}).
+
+\newpage
+
+\begin{figure} [!ht]
+    \centering
+    \includegraphics[width=0.4\linewidth]{images/yolo_proba.png}
+    \caption{ Class conditional probability map from YOLO website}
+    \label{pict:yolo_proba}
+\end{figure}
+
+The third step is to combine both previous step (confidence score for the bounding box and class conditional probabilities) into one final score. This final score evaluates the confidence that each bounding box contains a specific object (figure \ref{pict:yolo_final}).
+
+\begin{figure} [!ht]
+    \centering
+    \includegraphics[width=0.4\linewidth]{images/yolo_final.png}
+    \caption{Bounding box and class conditional probabilities, from YOLO website}
+    \label{pict:yolo_final}
+\end{figure}
+
+In figure \ref{pict:yolo_final}, their are still a lot of bounding box, the only remained step is to filter this bounding box with a final score that has to be higher than a specific threshold. Also, duplicated bounding boxes are removed using a non-maximum suppression. The final result is visible on figure \ref{pict:yolo_final_filter}.
+
+\begin{figure} [!ht]
+    \centering
+    \includegraphics[width=0.3\linewidth]{images/yolo_final_filter.png}
+    \caption{Final result after filtering, output from YOLO, from YOLO website}
+    \label{pict:yolo_final_filter}
+\end{figure}
+
+\newpage
+
+To summarize, each of the bounding boxes are composed by 5 predictions:
+\begin{enumerate}
+    \item x,y coordinates: offsets between the center of the bounding box relatives to the bounds of the cell.
+    \item w,h: width and height of the bounding box
+    \item confidence score, how YOLO is certain that this bounding box contains this object
+\end{enumerate}
+
+YOLO is a state of the art solution because it is a real time object detection system. What is the secret ? The output predictions are all computed at the same time looking only once the image (You Look Only Once). Since it predicts all of these detection simultaneously YOLO also implicitly incorporates global context in the detection process so it can learn things about which objects tend to occur together, the relative size and location of objects and other assorted things.
+
+\subsubsection{Training}
+
+YOLO is pre-trained on a ImageNet that is currently the biggest dataset for Computer Vision tasks (millions of images, more than a thousands class in different scenes). When pre-train, it learns to convert the millions images into a feature map (convolution weights). So when YOLO is actually trained with your own data set it adapts this convolutional weights to detect your own object class in the training set of images. Pre-train allows to have very good performance with a small training set. 
+
+For the data augmentation, YOLO randomly scales and translates of up to 20\% of the original image size and also randomly adjusts the exposure and saturation of the image by up to a
+factor of 1.5 and hue by up to a factor 0.1 in the HSV color space.
+
+Overall the training of this network is straightforward and corresponds to a lot a of standards in the Computer Vision community: YOLO pre-train on ImageNet, uses stochastic gradient descent and uses data augmentation.
+
+\begin{figure} [!ht]
+    \centering
+    \includegraphics[width=0.65\linewidth]{images/yolo_example.png}
+    \caption{YOLO at work, street road example}
+    \label{pict:yolo_example}
+\end{figure}
+
+
+\newpage
+
+\subsection{Features Extraction}
+
+Feature extraction is the second step performed by the presented controller.
+
+\subsubsection{Image feature}
+
+Image feature is a simple image pattern, based on which what we see in the image can be described. The main role of features in computer visions is to transform visual information into the vector space. On the vector space we will be able to apply mathematical operations on this features.
+This features can be for example points, lines or ellipses.
+The selected feature as what his called a feature parameter, it is any numerical quantity associated to the selected feature in the image plane. This can be coordinates of a point, angular coefficient and offset of a line, center and radius of a circle, generalized moments of an object in the image.
+
+\subsubsection{Image Formation}
+
+in this section, the image acquisition process will be described. To this purpose we will use the perspective camera model. It is the model the most commonly used in computer vision, it reproduces with the behaviour of real cameras with the most accuracy \cite{Szeliski:2010:CVA:1941882}.
+
+\section{Visual Servoing}
+\label{Visual_Servoing}
+
+\section{Robotic manipulators and kinematics}
+\label{Robotic_manipulator}
+
+
