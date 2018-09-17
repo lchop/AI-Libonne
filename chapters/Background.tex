@@ -98,7 +98,7 @@ Overall the training of this network is straightforward and corresponds to a lot
 
 \newpage
 
-\subsection{Features Extraction}
+\subsection{Feature Extraction}
 
 Feature extraction is the second step performed by the presented controller.
 
@@ -110,7 +110,60 @@ The selected feature as what his called a feature parameter, it is any numerical
 
 \subsubsection{Image Formation}
 
-in this section, the image acquisition process will be described. To this purpose we will use the perspective camera model. It is the model the most commonly used in computer vision, it reproduces with the behaviour of real cameras with the most accuracy \cite{Szeliski:2010:CVA:1941882}.
+In this section, the image acquisition process will be described. To this purpose we will use the perspective camera model. It is the model the most commonly used in computer vision, it reproduces with the behaviour of real cameras with the most accuracy \cite{Szeliski:2010:CVA:1941882}.
+
+\begin{figure} [!ht]
+    \centering
+    \includegraphics[width=0.65\linewidth]{images/model.png}
+    \caption{Ideal pinhole camera model}
+    \label{pict:pinhole_camera_model}
+\end{figure}
+
+Given a 3D scene in the world, a camera projects one or more 3-D point(s) onto the 2D image plane. The main feature of the perspective projection is the conservation of straight lines, after the transformation. The image formation can be described with a model called the pinhole camera model \cite{Hartley2004} (Figure: \ref{pict:pinhole_camera_model}).
+
+Figure \ref{pict:pinhole_camera_model} shows the ideal representation of the pinhole camera model, considering a central projection of points in space, onto an image plan defined by $Z = f$ where $f$ is the focal length. The optical center $C$, located at the origin of this 3D coordinate system, represents the point in which all the 3D projection intersect. This principal axis is defined as the line perpendicular to the image plane, passing through the optical center. The principal axis intersects the image plane in the principal point $p$ \cite{Hartley2004}.
+
+A point $X = (X,Y,Z)^T$ defined in the coordinate system of the camera, is mapped on the image, dividing the coordinates X and Y by the point depth Z, and multiplying by the focal length f as described in
+
+\begin{equation}
+    X = (X,Y,Z)^T = (f \frac{X}{Z},f \frac{Y}{Z})^T
+    \label{eq_image_1}
+\end{equation}
+\newpage
+
+Using homogeneous coordinates (\ref{eq_image_1}) can be written as:
+\begin{equation}
+   x = PX
+\end{equation}
+With $ x = (f \frac{X}{Z},f \frac{Y}{Z})^T $ and $ X = (X, Y, Z, 1)^T$ and the camera matrix P is composed by the matrix $K$ of intrinsic parameters and the extrinsic parameters matrix composed by the rotation matrix $R$ and the translation matrix $t$.
+\begin{equation}
+   P = K \big[ R|t \big]
+\end{equation}
+
+The matrix K of intrinsic parameters, also called calibration matrix can be represent as:
+\[
+K 
+=
+\begin{bmatrix}
+    f_{x} & s & c_{x} \\
+    0 & f_{y} & c_{y}\\
+    0 & 0 & 1
+\end{bmatrix}
+\]
+where $f_{x}$ and $f_{y}$ are independent focal length for the camera sensor x and y dimensions. $c_{x}$ and $c_{y}$ denotes the optical frame center expressed in pixel coordinates.
+
+$X$ will be expressed in the camera coordinate frame but the points in 3D space are expressed in the world coordinate frame. The extrinsic parameters matrix (E)  represent the relation between this two spaces. It represents the external position and orientation of the camera in the 3D world and relates the camera frame to the world frame:
+\[
+E
+=
+\begin{bmatrix}
+    R_{[3x3]} & t \\
+    0_{[1x3]} & 1
+\end{bmatrix}
+\]
+an homogeneous matrix composed by a rotation matrix (R) and a translation vector (t).
+
+
 
 \section{Visual Servoing}
 \label{Visual_Servoing}
