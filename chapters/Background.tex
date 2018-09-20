@@ -184,6 +184,7 @@ the image from a 3D point in the camera frame, by the depth of the point in
 the camera frame
 The error is defined as:
 \begin{equation}
+\label{first_ibvs}
 e(t)=s(m(t),p) - s^*
 \end{equation}
 with m(t), the computation from the image measurements, e.g. image coordinates of interest point, area, center of gravity.
@@ -213,6 +214,7 @@ The goal is to reduce the error, to make the error converge to a lower value, to
 \end{equation}
 From \ref{equation_2_ibvs} and since the control is done on the camera velocities the control law becomes:
 \begin{equation}
+\label{eq_control_law}
     v_{c}= - \lambda L_{s}^+ e
 \end{equation}
 with $L_{s}^+$ the Moore-Penrose pseudo inverse matrix, that is defined as:
@@ -312,10 +314,163 @@ This method gives a better trajectory with less oscillations. \\
 Problems from using a \gls{IBVS} are referred in literature, like problems of singularities in the interaction matrix, or the reach of local minima can lead to problem in the control. It is also known as a highly coupled process. A correct estimation of the interaction matrix in IBVS is important to provide stability to the control system and avoid perturbations. 
 
 \subsection{Pose Based Visual Servoing}
+\gls{PBVS} uses 3D features instead of 2D, as in IBVS, required to estimate the
+pose of the targeted object. Features are extracted from the image and used to
+determine the pose of the target with respect to the camera, in the Cartesian space \cite{<book-coork>}. Various methods of 3D pose computation of an object exist in the literature from triangulation methods, to model based estimation. The classical computer vision problem is called the 3D localization problem \cite{LOWE1987355}. Once the 3D reconstruction of the object is established, the error is then computed in the task space and used in the control law.
+All the previous step of the control law computation from (eq: \ref{first_ibvs}) to (eq: \ref{eq_control_law}) presented in the previous section are still valid. However, the interaction matrix will not be the same. \\
 
+Four coordinate frames are considered: the current camera frame $C$, the world base frame $W$, an object frame $O$, as reference of frame of the object and  a desired camera frame $C^*$. The orientation of $C$ relative to $C^*$ is given by a rotation matrix $R_{[3x3]}$. The corresponding angle parametrisation $\theta$ and the translation vector t, defines the feature s.
+The computation of the interaction matrix will then depend on how t is defined:
+\newpage
+If t is defined as a function of $O$, $t^C_O$, $\theta = 0$ for the desired feature $s^*$  and the error is computed between  $t^C_O$ and $t^{C^*}_O$
+\[
+L_e
+=
+\begin{bmatrix}
+    -I_3 & t \\
+    0 & L_\theta
+\end{bmatrix}
+\]
+with $I_3$ the identity matrix.
+If t is defined as a function of $C$, $t^{C^*}_O$, $m^* = 0$ and $e=s$, the interaction matrix will be:
+\[
+L_e
+=
+\begin{bmatrix}
+   R^{C^*}_C & 0 \\
+    0 & L_\theta
+\end{bmatrix}
+\] \\
+
+Usually the trajectory is better followed in 3D space than in image space due to the definition in Cartesian space. However, points can leave the image space due to the fact that the control is not directly done in the image. In PBVS a correct estimation of the pose is crucial, because of the error regulation. So the 3D reconstruction depends directly on the calibration of the vision system.
+
+\begin{figure} [!ht]
+    \centering
+    \includegraphics[width=0.5\linewidth]{images/pbvs.png}
+    \caption{PBVS, coordinate frames overview}
+    \label{pict:pbvs}
+\end{figure}
+
+\subsection{Hybrid}
+
+In the two previous sections, the two main methods for \gls{VS}, where presented. A combination of these methods is also possible, it is called Hybrid visual servoing. The basic idea behind hybrid visual servoing is to decouple the Z axis motions (including
+both the translational and the rotational components) from the other DoF. In this section, one method of hybrid visual servoing will be presented but it is not the only possibilities, more methods are present in the literature. 
+The 2-1/2D visual servoing is an hybrid method. The main idea is to control the camera motion with both IBVS and PBVS. IBVS will be use to control the translational motion and PBVS to control the rotational motion. In \cite{<inria-01350283>}, starting from the hypothesis that a control for angular velocity $w_c$ is available, in PBVS method can be defined as:
+
+\begin{equation}
+    w_c = - \lambda \theta
+\end{equation}
+\newpage
+The goal is to control the several translational DoF by partitioning the interaction matrix into two matrices: $L_v$, matrix of linear velocities, and $L_w$, matrix of angular velocities, obtaining:
+\begin{equation}
+    L_e
+=
+\begin{bmatrix}
+   L_v & L_w \\
+    0 & L_\theta
+\end{bmatrix}
+\end{equation}
+Now, the time variation of the feature can be describe as:
+\begin{equation}
+    \Dot{s}
+=
+\begin{bmatrix}
+   L_v & L_w 
+\end{bmatrix}
+\begin{bmatrix}
+   v_c \\ 
+   w_c
+\end{bmatrix}
+\end{equation}
+The desired translation control input is solved for an error with an exponential decay:
+\begin{equation}
+    \Dot{e_t} = -\lambda e_t
+\end{equation}
+At the end, the following control law is obtained to express the translational motion input:
+\begin{equation}
+    v_c = - L_v^+(\lambda e_t + L_w w_c)
+\end{equation}
+ with $\lambda e_t + L_w w_c$, the new error expression. \\
+
+To resume, in this method, the translational velocities are computed from an IBVS control law and the rotation velocities can be added later using a 3D pose estimation algorithm and compute using PBVS visual servoing. 
 
 
 \section{Robotic manipulators and kinematics}
 \label{Robotic_manipulator}
 
+Robotic servo manipulators are kinematic chains.They are composed of links, and this links are connected by joints (figure: \ref{pict:chain}). The fixed part of the chain is called the base and the ending part is called the end effector. It is where usually the tool performing the task (effector) is fixed, for example a gripper. In robotic manipulators joints are the movable elements, which enable relative movement between the neighboring links. \\
 
+\begin{figure} [!ht]
+    \centering
+    \includegraphics[width=0.65\linewidth]{images/chain.png}
+    \caption{Kinematic chain of manipulator}
+    \label{pict:chain}
+\end{figure}
+\newpage
+
+To describe the position and orientation of the robotic manipulator in space, frames are attached to the links and to the end effector (figure: \ref{pict:frames}). Each frame is expressed with respect to a reference frame called base frame. Description of the frame is given by position vector (position description) relative to some other reference frame and rotation matrix (orientation description).
+
+\begin{figure} [!ht]
+    \centering
+    \includegraphics[width=0.65\linewidth]{images/frames.png}
+    \caption{Frames attached on the manipulator joints}
+    \label{pict:frames}
+\end{figure}
+This transformation is stored in an homogeneous matrix:
+\[
+T
+=
+\begin{bmatrix}
+    R_{[3x3]} & t \\
+    0_{[1x3]} & 1
+\end{bmatrix}
+\]
+
+To compute transformation between base frame and last link, kinematic equations are use. For example, the transformation from frame {i} to frame {0} (base frame) can be written:
+
+\begin{equation}
+    T_i^0=T_1^0 T_2^1 ... T_i^{i-1}
+\end{equation}
+The transformation is a function of all joint variables and it computes Cartesian position and orientation of the last link frame.
+
+\subsection{Forward kinetics}
+
+Knowing simple geometrical manipulator’s frames positions, in respect to other adjacent frames, it is possible to compute coordinates of the end effector, from the given joints angles. In other terms, using kinematic equations of the robot, it is possible to compute the position of the end effector from specified value of the joint parameters. This is referred as forward kinematics \cite{trove.nla.gov.au/work/27361264}.
+Considering the system parametrization in figure \ref{pict:dh}:
+
+\begin{figure} [!ht]
+    \centering
+    \includegraphics[width=0.45\linewidth]{images/dh.png}
+    \caption{Robotic manipulator, with DH parametrization}
+    \label{pict:dh}
+\end{figure}
+\newpage
+To compute forward kinematic problem, the Denavit-Hartenberg convention is usually used. This convention defines a transformation between frame {i} relative to the frame {i-1}. The general form of $T_i^{i-1}$:
+
+\begin{equation}
+    A_i = Rot_{z,\theta _i} Trans_{z,d_i} Trans_{x,a_i} Rot_{x, \alpha _i}
+\end{equation}
+with $A_i$, the transform between a link i and its parents i-1.
+\begin{enumerate}
+    \item z-axis of parent link i-1 aligned with axis of joint i
+    \item 4 parameters for joint angle ($\theta _i$), link offset ($d_i$), link length ($a_i$), link twist ($\alpha _i$)
+\end{enumerate}
+Solving this transformation from base link to end effector link, the pose of the end effector can be compute what solves the forward kinematic problem. 
+
+\subsection{Inverse kinematics}
+
+Another method to control the pose of the end effector is the inverse method of the forward kinematic called inverse kinematic \cite{trove.nla.gov.au/work/27361264}. The inverse kinematics method calculates a set of all possible joints angles, which can be used to obtain desired position and orientation of the end effector. In terms of Denavit-Hartenberg convention, we are searching for an angle ($\theta _i$) with given $T_i^{i-1}$. In case of obtaining multiply solutions, decisions has to be taken to have an optimal motion in terms of various factors and constraints.
+There is also possibility of nonexistence of the problem solution. It also might be state that point is not reachable for the manipulator. This method is subject to singularities, for example there are an infinite solution to reach the desired pose and the robot is lost on the one to choose. Local minima is another issue, the manipulator think that the pose has been reached but it is not, it is just a local minima. Finding the correct solution might be more complex than when using forward kinematics. They are a lot of different methods to solve inverse kinematic problems such as iterative methods or closed loop methods for example \cite{326569}.
+
+The iterative methods solve the inverse kinematics problem by using a sequence of attempts leading to incrementally better configuration for the joints angles. Achieving better configuration means minimizing the difference between the current and target positions of the robot’s end-effector.
+
+Another approach is closed-form method. In a closed-form method, the solution of the joints angles configuration can be straightforward expressed as a set of closed-form equations. Closed-form method gives a clear, single solution when is used for 6-degree-of-freedom systems with special kinematic structure
+of kinematic chains
+
+For mapping the joint velocities to the spatial velocities of the end effector expressed in word frame, the Jacobian matrix is used. For the work presented here, it is used given an end effector spatial velocity vector to compute the joint velocities to achieve this command as long as the Jacobian is non-singular.
+
+\begin{equation}
+    v_c = J(X) \Dot{\theta }
+\end{equation}
+with $v_c$, vector of spatial velocities and $\theta$, joint angles. 
+\newpage
