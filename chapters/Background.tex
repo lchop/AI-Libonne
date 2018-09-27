@@ -8,7 +8,7 @@ This chapter provides fundamentals of theoretical knowledge required to understa
 \section{Object Detection and Features Extractions}
 \label{Object_detection}
 
-Object detection is the fist step performed by the presented controller. This detection is used to classify and track the object in real-time when the arm is moving (since the camera is fixed to the end effector) but also if the object is moved since the controller is used in a dynamic environment. Feature extraction is the second step performed by the controller and is used to compute the visual servoing control law.
+Object detection is the fist step performed by the presented controller. This detection is used to classify and track the object in real-time when the manipulator is moving (since the camera is fixed to the end effector) but also if the object is moved since the controller is used in a dynamic environment. Feature extraction is the second step performed by the controller and is used to compute the visual servoing control law.
 
 \subsection{Objection detection}
 
@@ -360,6 +360,7 @@ Usually the trajectory is better followed in 3D space than in image space due to
 \end{figure}
 
 \subsection{Hybrid}
+\label{hybrid}
 
 In the two previous sections, the two main methods for \gls{VS}, where presented. A combination of these methods is also possible, it is called Hybrid visual servoing. The basic idea behind hybrid visual servoing is to decouple the Z axis motions (including
 both the translational and the rotational components) from the other DoF. In this section, one method of hybrid visual servoing will be presented but it is not the only possibilities, more methods are present in the literature. 
