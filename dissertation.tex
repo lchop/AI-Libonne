@@ -60,34 +60,16 @@
 
 \pagenumbering{roman}
 
-\if\includeAcknowledgments 1
-\input{acknowledgments/acknowledgments.tex}
-\NewPage
-\fi
-
-\include{abstract/abstract-en}
-\NewPage
-\include{abstract/abstract-pt}
-\NewPage
-
 % Table of contents
 \tableofcontents
 % A new page is necessary only if table of contents has an even number of pages
-\NewPage
-
-% List of tables
-\addcontentsline{toc}{chapter}{\listtablename}
-\listoftables
-\NewPage
 
 % List of figures
 \addcontentsline{toc}{chapter}{\listfigurename}
 \listoffigures
-\NewPage
 
 % List of acronyms
 \printglossary[type=\acronymtype]
-\NewPage
 
 \pagenumbering{arabic}% Arabic page numbers (and reset to 1)
 
@@ -96,10 +78,6 @@
 \bibliographystyle{ieeetr}
 \addcontentsline{toc}{chapter}{Bibliography}
 \bibliography{bibliography/dissertation}
-
-% Appendix
-\appendix
-\input{appendix/main.tex}
 
 % Glossary and Acronym List
 \if\includeGlossary 1
